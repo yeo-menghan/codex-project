@@ -1,33 +1,106 @@
-# Simple Avatar TTS Demo
+# PaperWaifu Carousel
 
-Minimal browser demo that combines:
+TikTok-style vertical research paper browser with animated waifu avatars.
 
-- TalkingHead: avatar rendering + lip sync
-- HeadTTS: browser ONNX text-to-speech engine
-- Kokoro timestamped ONNX model: `onnx-community/Kokoro-82M-v1.0-ONNX-timestamped`
+## Features (MVP)
 
-## Run
+- Full-screen vertical paper carousel (`swiper` vertical mode)
+- One animated avatar per paper slide (`TalkingHead`)
+- Intro speech auto-plays when slide becomes active (`HeadTTS` + Kokoro ONNX)
+- Floating right-side actions: Like, Share, Chat
+- Upload sub-panel to add new papers (`.pdf`, `.txt`, `.md`)
+- Backend-generated profile from uploaded paper (title, brief summary, intro script, personality)
+- Bottom chat drawer per paper
+- Chat requests sent to FastAPI backend, backend calls OpenAI, returns `content` + `emotion`
+- Avatar speaks backend responses with lip sync
 
-Serve this folder over HTTP (do not open `index.html` directly from `file://`):
+## Project structure
+
+- `pages/index.tsx`: app entry
+- `components/`: carousel, slide, avatar stage, action buttons, chat drawer
+- `hooks/useAvatarController.ts`: avatar/TTS orchestration
+- `hooks/useChat.ts`: frontend chat API client
+- `data/papers.ts`: hardcoded paper list (MVP)
+- `backend/main.py`: FastAPI backend with `/papers`, `/papers/upload`, `/chat`
+
+## Frontend setup
 
 ```bash
-npx serve .
+npm install
+npm run dev
 ```
 
-Then open the printed local URL (usually `http://localhost:3000`).
+Frontend runs on `http://localhost:3000`.
 
-## Usage
+## Backend setup
 
-1. Wait for status to become `Ready`.
-2. Choose an avatar model.
-3. Enter a prompt.
-4. Click `Respond`.
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp ../.env.example .env
+# set OPENAI_API_KEY in your shell or .env loader
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
 
-Each avatar model is tied to an associated Kokoro voice. The app generates a short text reply, synthesizes speech with HeadTTS/Kokoro, and sends audio + timestamps + visemes to TalkingHead so the avatar speaks with lip sync.
+Backend runs on `http://127.0.0.1:8000`.
 
-Sample avatar files are loaded from `TalkingHead/main/avatars` on GitHub raw URLs, because not all avatar assets are available under the `@1.7` jsDelivr tag.
+## Environment variables
 
-## Notes
+Copy `.env.example` and configure:
 
-- First run can take a while because model and assets are downloaded.
-- Best experience is in a modern Chromium browser.
+- `NEXT_PUBLIC_API_BASE_URL` (frontend -> backend URL)
+- `OPENAI_API_KEY` (backend)
+- `OPENAI_MODEL` (optional, default `gpt-4.1-mini`)
+- `CORS_ORIGINS` (optional)
+
+## Troubleshooting
+
+- If you see `Cannot find module './lipsync-en.mjs'` in Next.js, keep `lipsyncModules: []` (already set in `useAvatarController`) and use timestamped Kokoro output, which includes viseme timing data.
+
+## API
+
+`GET /papers`
+
+Returns all current paper profiles used by the carousel.
+
+`POST /papers/upload` (`multipart/form-data`)
+
+Fields:
+
+- `file`: paper file (`.pdf`, `.txt`, `.md`)
+- `personality` (optional): `confident | calm | playful`
+
+Response:
+
+```json
+{
+  "id": "new-paper-id",
+  "title": "Paper title",
+  "summary": "Brief generated summary",
+  "intro_script": "Short spoken intro",
+  "personality": "calm",
+  "avatar": {
+    "url": "https://.../brunette.glb",
+    "body": "F",
+    "voice": "af_bella"
+  }
+}
+```
+
+`POST /chat`
+
+```json
+{
+  "paper_id": "paper1",
+  "message": "What is your main contribution?"
+}
+```
+
+```json
+{
+  "content": "My main contribution is ...",
+  "emotion": "smug"
+}
+```

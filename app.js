@@ -44,7 +44,8 @@ const head = new TalkingHead(avatarNode, {
   cameraView: "upper",
   cameraRotateEnable: true,
   cameraRotateSpeed: 2,
-  lipsyncModules: ["en"],
+  // Timestamped Kokoro output provides visemes, so explicit lipsync modules are optional.
+  lipsyncModules: [],
   ttsEndpoint: null
 });
 
@@ -95,12 +96,18 @@ async function synthesize(text, voice) {
   });
 
   const messages = await headtts.synthesize({ input: text });
-  const audioMessage = messages.find((message) => message.type === "audio");
-  if (!audioMessage) {
+  const audioMessages = messages
+    .filter((message) => message.type === "audio")
+    .sort(
+      (a, b) =>
+        (a.metaData?.part ?? 0) -
+        (b.metaData?.part ?? 0)
+    );
+  if (audioMessages.length === 0) {
     const errorMessage = messages.find((message) => message.type === "error");
     throw new Error(errorMessage?.data?.error || "No audio returned by HeadTTS");
   }
-  return audioMessage.data;
+  return audioMessages.map((message) => message.data);
 }
 
 async function init() {
@@ -206,10 +213,12 @@ respondBtn.addEventListener("click", async () => {
   setStatus("Synthesizing speech...");
 
   try {
-    const ttsOutput = await synthesize(reply, preset.voice);
+    const ttsOutputs = await synthesize(reply, preset.voice);
 
     setStatus("Speaking...");
-    await head.speakAudio(ttsOutput, { lipsyncLang: "en" });
+    for (const ttsOutput of ttsOutputs) {
+      await head.speakAudio(ttsOutput, { lipsyncLang: "en" });
+    }
     setStatus("Ready");
   } catch (error) {
     console.error(error);
