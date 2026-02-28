@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Avatar TTS</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+          "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main class="app">
+      <section class="panel">
+        <h1>Avatar TTS Demo</h1>
+        <p class="subtle">
+          Uses TalkingHead + HeadTTS with Kokoro timestamped ONNX model.
+        </p>
+
+        <label for="prompt">User prompt</label>
+        <textarea
+          id="prompt"
+          rows="4"
+          placeholder="Type something for the avatar..."
+        >Hello! Can you introduce yourself?</textarea>
+
+        <div class="row">
+          <label for="avatarModel">Avatar model</label>
+          <select id="avatarModel">
+            <option value="brunette">Brunette (TalkingHead)</option>
+            <option value="avaturn">Avaturn</option>
+            <option value="avatarsdk">AvatarSDK</option>
+            <option value="mpfb">MPFB</option>
+          </select>
+          <p id="voiceHint" class="voice-hint">Voice: af_bella</p>
+        </div>
+
+        <button id="respondBtn" type="button">Respond</button>
+        <p id="status" class="status">Initializing avatar and TTS...</p>
+        <p id="response" class="response"></p>
+      </section>
+
+      <section class="avatar-wrap">
+        <div id="avatar" class="avatar"></div>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
